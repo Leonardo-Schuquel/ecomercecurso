@@ -1,3 +1,13 @@
 from django.contrib import admin
+from .models import Produto, Variacao
 
-# Register your models here.
+class VariacaoInline(admin.TabularInline):
+    model = Variacao
+    extra = 1
+
+class ProtudoAdmin(admin.ModelAdmin):
+    inlines = [VariacaoInline]
+
+admin.site.register(Produto, ProtudoAdmin)
+admin.site.register(Variacao)
+
