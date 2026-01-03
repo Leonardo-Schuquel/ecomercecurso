@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from utils.random import slugify_new
 from PIL import Image
 import os
 
@@ -13,6 +14,7 @@ class Produto(models.Model):
         max_length=255, 
         blank=True, 
         null=True,
+        verbose_name='Descrição curta',
     )
     long_description = models.TextField(blank=True, null=True,)
     image = models.ImageField(
@@ -20,15 +22,23 @@ class Produto(models.Model):
         blank=True, 
         null=True,
         )
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, blank=True, null=True)
     marketing_price = models.FloatField()
-    promotional_price = models.FloatField(default=0)
+    promotional_price = models.FloatField(default=0,)
     category = models.CharField(
         default='V', max_length=1, 
         choices=[
-            ('V', 'Variação'), ('S', 'Simples'),
+            ('V', 'Variavel'), ('S', 'Simples'),
         ]
     )
+
+    def get_price_format(self):
+        return f'R$ {self.marketing_price:.2f} '.replace('.', ',')
+    get_price_format.short_description = 'Preço'
+
+    def get_promotional_price(self):
+        return f'R$ {self.promotional_price:.2f} '.replace('.', ',')
+    get_promotional_price.short_description = 'Preço Promo'
 
     @staticmethod
     def resize_image(img, size=800):
@@ -40,7 +50,7 @@ class Produto(models.Model):
             img_pill.close()
             return
 
-        new_height = round((size * original_width) / original_width)
+        new_height = round((size * original_height) / original_width)
         new_img = img_pill.resize((size, new_height), Image.LANCZOS)
 
         new_img.save(
@@ -50,6 +60,10 @@ class Produto(models.Model):
         )
 
     def save(self, *args, **kwargs):
+        if not self.slug:
+            slug = f'{slugify_new(self.nome, 5)}'
+            self.slug = slug
+
         super().save(*args, **kwargs)
 
         max_image_size = 800
@@ -73,4 +87,4 @@ class Variacao(models.Model):
 
 
     def __str__(self):
-        return self.name or self.proctud.name
+        return self.name or self.product.nome
